@@ -1,0 +1,74 @@
+---
+title: "Assignment 9"
+author: "Sam Gutmanis"
+date: "`r Sys.Date()`"
+output: html_document
+---
+Load libraries
+```{r}
+library("doParallel")
+library("parallel")
+library("foreach")
+```
+Check number of cores in computer
+```{r}
+detectCores()
+```
+There are 8 cores in this computer
+
+
+Write a standard for loop 4,000 times, and each time calculate the mean of 100,000 random numbers from a normal distribution with mean of 10 and standard deviation of 3.
+
+```{r}
+for (i in 1:4000) {
+  rand_means<- mean(rnorm(100000, mean = 10, sd = 3))
+} # Standard for loop
+```
+
+Track the amount of time this takes to run. You can do this by assigning objects with the Sys.time() function before and after the loop. Calculate the difference between the objects for an estimate of the run time.
+```{r}
+start_time <- Sys.time()  # Record the start time
+
+for (i in 1:4000) {
+  rand_means<- mean(rnorm(100000, mean = 10, sd = 3))
+} # Standard for loop
+
+end_time <- Sys.time()  # Record the end time
+elapsed_time <- end_time - start_time  # Calculate the elapsed time
+elapsed_time  # Print the elapsed time
+```
+This loop took 41.62368 seconds to run.
+```{r}
+theor_run<-elapsed_time/detectCores() # Elapsed time of series loop divided by the number of cores that would run in parallel
+theor_run
+```
+If this program was run with 8 threads making use of all 8 cores in this computer, the program should run about 8 times faster. In the case of this program, the runtime should be reduced from about 42 seconds to around 5 seconds.
+
+Now modify your for loop to run the same code in parallel, instead of running each of the 4,000 loops in order. 
+```{r, echo=FALSE}
+Cores <- parallel::makeCluster(detectCores()) 
+doParallel::registerDoParallel(Cores) # Set r to run on all cores
+
+start_timep <- Sys.time()  # Record the start time
+
+foreach(i = 1:4000, .combine = c) %dopar% {
+  rand_means <- mean(rnorm(100000, mean = 10, sd = 3))
+} # Standard for loop
+
+end_timep <- Sys.time()  # Record the end time
+
+parallel::stopCluster(Cores) # Stop r from running on all cores
+```
+```{r}
+elapsed_timep <- end_timep - start_timep  # Calculate the elapsed time
+elapsed_timep  # Print the elapsed time
+```
+```{r}
+elapsed_time-elapsed_timep
+```
+```{r}
+elapsed_timep-theor_run
+```
+This time the loop only took around 11 seconds to run fully which is about 30 seconds faster than the serial loop, however, the parallel loop was still around 6 seconds slower than what I projected it to be according to the number of cores it was running on.
+
+The theoretical run-time is faster than the actual run-time of the parallel program. This is likely because the theoretical run-time is based off of an ideal setting where all of the cores of my computer share the load of the for loop perfectly and there is no interference at all. The environment of my computer is not an ideal setting for this as I still have other background programs running and thus it is likely that they slowed down the the actual run-time of the program.
